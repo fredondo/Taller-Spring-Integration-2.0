@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+
+	<bean id="generadorNombresFicheros" class="spring.talleres.integracion.GeneradorNombresFicheros" />
+	<bean id="filtroMensajes" class="spring.talleres.integracion.OtroFiltroMensajes" />
+	<bean id="conversorString2Integer" class="spring.talleres.integracion.ConversorString2Integer" />
+	<bean id="troceador" class="spring.talleres.integracion.Troceador" />
+	<bean id="servicioElevarAlCubo" class="spring.talleres.integracion.ServicioElevarAlCubo" />
+	<bean id="servicioRaizCubica" class="spring.talleres.integracion.ServicioRaizCubica" />
+</beans>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:int-stream="http://www.springframework.org/schema/integration/stream"
+	xmlns:int-file="http://www.springframework.org/schema/integration/file"
+	xmlns:int-groovy="http://www.springframework.org/schema/integration/groovy"
+	xsi:schemaLocation="http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-2.0.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.0.xsd
+		http://www.springframework.org/schema/integration/groovy http://www.springframework.org/schema/integration/groovy/spring-integration-groovy-2.0.xsd
+		http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-2.0.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<import resource="componentes.xml"/>
+
+	<int:poller fixed-rate="1000" default="true"/>
+	<int-stream:stdin-channel-adapter id="entrada-consola"
+		channel="mensajes-en-bruto">
+		
+	</int-stream:stdin-channel-adapter>
+	<int:channel id="mensajes-numericos" datatype="java.lang.Integer"></int:channel>
+	<int-stream:stdout-channel-adapter id="salida-consola"
+		append-newline="true" />
+	<int-stream:stderr-channel-adapter id="salida-error"
+		append-newline="true" />
+	<int:recipient-list-router id="multicast" input-channel="positivos">
+	<int:recipient channel="salida-consola" />
+	
+	<int:recipient channel="mensajes-cadena" />
+	</int:recipient-list-router>
+	<int:channel id="mensajes-en-bruto"></int:channel>
+	<int-file:outbound-channel-adapter directory="logs" id="fichero-log"
+		auto-create-directory="true"
+		filename-generator="generadorNombresFicheros" channel="mensajes-cadena">
+	</int-file:outbound-channel-adapter>
+	<int:filter id="filtro-x-tamaño" input-channel="mensajes-en-bruto"
+		discard-channel="salida-error" output-channel="cadenas">
+		<int-groovy:script >
+		<![CDATA[
+			payload.size()>2
+		]]>
+		</int-groovy:script>
+	</int:filter>
+	<int:router id="router-positivos"
+		expression="payload &gt;0" input-channel="mensajes-tratados">
+		<int:mapping channel="positivos" value="true" />
+		<int:mapping channel="negativos" value="false" />
+	</int:router>
+	<int:channel id="positivos"></int:channel>
+	<int:channel id="negativos"></int:channel>
+	<int-stream:stderr-channel-adapter channel="negativos"
+		id="salida-error-2" append-newline="true" />
+
+	<int:converter ref="conversorString2Integer"/>
+	<int:channel id="mensajes-cadena" datatype="java.lang.String"></int:channel>
+	<int-file:inbound-channel-adapter directory="logs"
+		channel="ficheros" id="entrada-fichero"
+		auto-create-directory="true" filename-regex=".*dat$">
+	</int-file:inbound-channel-adapter>
+	<int-file:file-to-string-transformer input-channel="ficheros" output-channel="mensajes-en-bruto" id="transformar a cadenas"/>
+	<int:channel id="ficheros"></int:channel>
+	<int:splitter input-channel="cadenas" output-channel="mensajes-numericos"
+		ref="troceador" id="separar-x-comas">
+	</int:splitter>
+	<int:channel id="cadenas"></int:channel>
+	
+	<int:chain id="cadena-tratamientos"
+		input-channel="mensajes-numericos" output-channel="mensajes-tratados">
+		<int:service-activator ref="servicioElevarAlCubo"></int:service-activator>
+		<int:delayer default-delay="2000"></int:delayer>
+		<int:service-activator ref="servicioRaizCubica"></int:service-activator>
+	</int:chain>
+	<int:channel id="mensajes-tratados"></int:channel>
+</beans>
